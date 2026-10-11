@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Жылдамдық Симуляторы — 7-сынып Физика</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',Arial,sans-serif; background:linear-gradient(135deg,#f0f9ff 0%,#e8f5e9 50%,#f3e5f5 100%); min-height:100vh; }
+
+  .header { background:linear-gradient(135deg,#0D2B55,#007D8C); color:#fff; padding:18px 24px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.2); }
+  .header h1 { font-size:1.7rem; font-weight:800; letter-spacing:0.5px; }
+  .header p { font-size:0.95rem; opacity:0.85; margin-top:4px; }
+
+  .main { max-width:1100px; margin:24px auto; padding:0 16px; }
+
+  /* TABS */
+  .tabs { display:flex; gap:8px; margin-bottom:20px; }
+  .tab { flex:1; padding:12px; border:none; border-radius:12px 12px 0 0; font-size:1rem; font-weight:700; cursor:pointer; transition:all 0.3s; }
+  .tab.active { color:#fff; transform:translateY(-3px); box-shadow:0 4px 16px rgba(0,0,0,0.2); }
+  .tab:nth-child(1) { background:#e3f5e8; color:#1A7A3C; }
+  .tab:nth-child(1).active { background:#1A7A3C; }
+  .tab:nth-child(2) { background:#dcf4f7; color:#007D8C; }
+  .tab:nth-child(2).active { background:#007D8C; }
+  .tab:nth-child(3) { background:#f0e2fa; color:#5C1888; }
+  .tab:nth-child(3).active { background:#5C1888; }
+  .tab:nth-child(4) { background:#ffefdd; color:#D45000; }
+  .tab:nth-child(4).active { background:#D45000; }
+
+  .panel { display:none; background:#fff; border-radius:0 16px 16px 16px; padding:24px; box-shadow:0 8px 32px rgba(0,0,0,0.1); }
+  .panel.active { display:block; }
+
+  /* SIMULATOR */
+  .sim-road { background:linear-gradient(180deg,#87CEEB 0%,#87CEEB 60%,#4CAF50 60%,#4CAF50 75%,#888 75%,#888 80%,#666 80%); border-radius:16px; height:200px; position:relative; overflow:hidden; margin-bottom:20px; box-shadow:inset 0 4px 12px rgba(0,0,0,0.15); }
+  .road-lines { position:absolute; bottom:18%; left:0; right:0; display:flex; gap:40px; padding:0 20px; }
+  .road-line { flex:1; height:4px; background:#fff; border-radius:2px; opacity:0.6; }
+  .vehicle { position:absolute; bottom:22%; font-size:2.2rem; transition:left 1s ease-in-out; cursor:default; filter:drop-shadow(2px 2px 4px rgba(0,0,0,0.3)); }
+  #car { left:5%; }
+  #bike { left:5%; font-size:1.8rem; }
+  #runner { left:5%; font-size:1.9rem; }
+
+  .controls { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .ctrl-box { background:#f8f9fa; border-radius:12px; padding:16px; border:2px solid #e0e0e0; }
+  .ctrl-box label { font-weight:700; color:#333; display:block; margin-bottom:8px; font-size:0.95rem; }
+  .ctrl-box input[type=range] { width:100%; accent-color:#007D8C; height:6px; }
+  .ctrl-box .val { font-size:1.4rem; font-weight:800; color:#007D8C; text-align:center; margin-top:6px; }
+
+  .vehicle-select { display:flex; gap:10px; margin-bottom:16px; }
+  .v-btn { flex:1; padding:10px; border:3px solid #ddd; border-radius:10px; background:#fff; cursor:pointer; font-size:1.3rem; font-weight:700; transition:all 0.3s; }
+  .v-btn.active { border-color:#007D8C; background:#dcf4f7; transform:scale(1.05); }
+
+  .result-box { border-radius:12px; padding:16px; margin-bottom:16px; text-align:center; font-size:1.6rem; font-weight:800; transition:all 0.4s; }
+  .result-box.correct { background:#e3f5e8; border:3px solid #1A7A3C; color:#1A7A3C; }
+  .result-box.incorrect { background:#fdeaea; border:3px solid #B51C1C; color:#B51C1C; }
+  .result-box.neutral { background:#f3f5f8; border:3px solid #ccc; color:#555; }
+
+  .btn { padding:12px 28px; border:none; border-radius:10px; font-size:1rem; font-weight:700; cursor:pointer; transition:all 0.3s; }
+  .btn-go { background:#1A7A3C; color:#fff; }
+  .btn-go:hover { background:#145c2e; transform:translateY(-2px); }
+  .btn-reset { background:#D45000; color:#fff; }
+  .btn-reset:hover { background:#a33b00; }
+  .btn-check { background:#5C1888; color:#fff; }
+  .btn-check:hover { background:#471268; }
+
+  /* FORMULA BOX */
+  .formula-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+  .f-card { border-radius:12px; padding:16px; text-align:center; }
+  .f-card .formula { font-size:1.8rem; font-weight:800; margin:8px 0; }
+  .f-card .desc { font-size:0.85rem; color:#555; }
+
+  /* TASKS */
+  .task-card { border-radius:12px; padding:18px; margin-bottom:16px; border-left:5px solid; }
+  .task-card h3 { font-size:1.1rem; font-weight:800; margin-bottom:10px; }
+  .task-input { width:100%; padding:10px; border:2px solid #ddd; border-radius:8px; font-size:1rem; margin:6px 0; }
+  .task-input:focus { outline:none; border-color:#007D8C; }
+
+  /* GRAPH */
+  canvas { border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.1); }
+
+  /* QUIZ */
+  .quiz-q { background:#f8f9fa; border-radius:12px; padding:16px; margin-bottom:14px; border-left:4px solid #007D8C; }
+  .quiz-q p { font-weight:700; margin-bottom:10px; font-size:1rem; }
+  .quiz-opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt { padding:8px 16px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-weight:600; transition:all 0.3s; background:#fff; }
+  .opt:hover { border-color:#007D8C; background:#dcf4f7; }
+  .opt.correct { background:#e3f5e8; border-color:#1A7A3C; color:#1A7A3C; }
+  .opt.wrong { background:#fdeaea; border-color:#B51C1C; color:#B51C1C; }
+
+  .score-box { background:linear-gradient(135deg,#0D2B55,#007D8C); color:#fff; border-radius:16px; padding:20px; text-align:center; margin-top:16px; }
+  .score-box h2 { font-size:1.8rem; }
+
+  @keyframes drive { from{left:5%} to{left:85%} }
+  .driving { animation: drive var(--dur,3s) linear forwards; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🚗 Жылдамдық Симуляторы — 7-сынып Физика</h1>
+  <p>Оқу мақсаты: 7.2.1.4 | v = s/t | vорт = Sжалпы / tжалпы | STEM Zertxana</p>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab(0)">🚗 Симулятор</button>
+    <button class="tab" onclick="showTab(1)">📐 Формулалар</button>
+    <button class="tab" onclick="showTab(2)">✏️ Тапсырмалар</button>
+    <button class="tab" onclick="showTab(3)">🧩 Mini Quiz</button>
+  </div>
+
+  <!-- TAB 1: SIMULATOR -->
+  <div class="panel active" id="tab0">
+    <h2 style="color:#0D2B55;margin-bottom:16px;">🎮 Жылдамдық зертханасы</h2>
+
+    <div class="vehicle-select">
+      <button class="v-btn active" onclick="selectVehicle('car',this)">🚗 Автомобиль</button>
+      <button class="v-btn" onclick="selectVehicle('bike',this)">🚴 Велосипед</button>
+      <button class="v-btn" onclick="selectVehicle('runner',this)">🏃 Жүгіруші</button>
+    </div>
+
+    <div class="sim-road">
+      <div class="road-lines">
+        <div class="road-line"></div><div class="road-line"></div>
+        <div class="road-line"></div><div class="road-line"></div>
+      </div>
+      <div class="vehicle" id="car">🚗</div>
+      <div class="vehicle" id="bike" style="display:none">🚴</div>
+      <div class="vehicle" id="runner" style="display:none">🏃</div>
+      <div style="position:absolute;top:8px;left:16px;color:#fff;font-weight:700;font-size:0.9rem;">☁️ Аспан</div>
+      <div style="position:absolute;bottom:24%;right:16px;color:#fff;font-weight:700;background:rgba(0,0,0,0.3);padding:4px 8px;border-radius:6px;">🏁 Финиш</div>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-box">
+        <label>📏 Жол ұзындығы (s)</label>
+        <input type="range" id="sRange" min="10" max="500" value="100" oninput="updateSim()">
+        <div class="val"><span id="sVal">100</span> м</div>
+      </div>
+      <div class="ctrl-box">
+        <label>⏱ Уақыт (t)</label>
+        <input type="range" id="tRange" min="5" max="120" value="25" oninput="updateSim()">
+        <div class="val"><span id="tVal">25</span> с</div>
+      </div>
+    </div>
+
+    <div class="result-box neutral" id="resultBox">
+      ⚡ Жылдамдықты есептеу үшін "Жүгір!" батырмасын басыңыз
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div style="background:#dcf4f7;border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:0.85rem;color:#007D8C;font-weight:700;">📏 ЖОЛ</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#007D8C;" id="disp_s">100 м</div>
+      </div>
+      <div style="background:#e3f5e8;border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:0.85rem;color:#1A7A3C;font-weight:700;">⏱ УАҚЫТ</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#1A7A3C;" id="disp_t">25 с</div>
+      </div>
+      <div style="background:#f0e2fa;border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:0.85rem;color:#5C1888;font-weight:700;">⚡ ЖЫЛДАМДЫҚ</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#5C1888;" id="disp_v">— м/с</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-bottom:20px;">
+      <button class="btn btn-go" onclick="runSim()">🏁 Жүгір!</button>
+      <button class="btn btn-reset" onclick="resetSim()">🔄 Қайта бастау</button>
+    </div>
+
+    <!-- Graph -->
+    <div style="margin-top:16px;">
+      <h3 style="color:#0D2B55;margin-bottom:12px;">📊 v–s графигі (t тұрақты кезінде)</h3>
+      <canvas id="graph" width="700" height="220"></canvas>
+    </div>
+
+    <!-- Comparison table -->
+    <div style="margin-top:20px;">
+      <h3 style="color:#0D2B55;margin-bottom:12px;">🏆 Транспорт салыстыруы</h3>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#0D2B55;color:#fff;">
+            <th style="padding:10px;border-radius:8px 0 0 0;">Көлік</th>
+            <th style="padding:10px;">s (м)</th>
+            <th style="padding:10px;">t (с)</th>
+            <th style="padding:10px;">v (м/с)</th>
+            <th style="padding:10px;border-radius:0 8px 0 0;">v (км/сағ)</th>
+          </tr>
+        </thead>
+        <tbody id="compTable">
+          <tr><td colspan="5" style="text-align:center;padding:16px;color:#888;">Әр транспортты жүгіріп, кестені толтырыңыз</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: FORMULAS -->
+  <div class="panel" id="tab1">
+    <h2 style="color:#0D2B55;margin-bottom:20px;">📐 Формулалар — STEM блок</h2>
+
+    <div class="formula-grid">
+      <div class="f-card" style="background:#e3f5e8;border:2px solid #1A7A3C;">
+        <div style="font-size:1rem;font-weight:700;color:#1A7A3C;">⚡ ЖЫЛДАМДЫҚ</div>
+        <div class="formula" style="color:#1A7A3C;">v = s / t</div>
+        <div class="desc">v — жылдамдық (м/с)<br>s — жол (м)<br>t — уақыт (с)</div>
+      </div>
+      <div class="f-card" style="background:#dcf4f7;border:2px solid #007D8C;">
+        <div style="font-size:1rem;font-weight:700;color:#007D8C;">📊 ОРТАША ЖЫЛДАМДЫҚ</div>
+        <div class="formula" style="color:#007D8C;font-size:1.4rem;">vорт = Sжалп / tжалп</div>
+        <div class="desc">Sжалп = s₁ + s₂<br>tжалп = t₁ + t₂</div>
+      </div>
+      <div class="f-card" style="background:#ffefdd;border:2px solid #D45000;">
+        <div style="font-size:1rem;font-weight:700;color:#D45000;">📏 АУДАРУ</div>
+        <div class="formula" style="color:#D45000;font-size:1.3rem;">× 3.6</div>
+        <div class="desc">м/с → км/сағ: × 3.6<br>км/сағ → м/с: ÷ 3.6<br>1 м/с = 3.6 км/сағ</div>
+      </div>
+    </div>
+
+    <div style="background:#f3f5f8;border-radius:12px;padding:20px;margin-bottom:20px;">
+      <h3 style="color:#0D2B55;margin-bottom:14px;">🔄 Формуланы алмастыру (формула триангулы)</h3>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;">
+        <div style="background:#e3f5e8;border-radius:10px;padding:14px;">
+          <div style="font-size:1.5rem;font-weight:800;color:#1A7A3C;">v = s / t</div>
+          <div style="font-size:0.85rem;color:#555;margin-top:4px;">Жылдамдықты табу</div>
+        </div>
+        <div style="background:#dcf4f7;border-radius:10px;padding:14px;">
+          <div style="font-size:1.5rem;font-weight:800;color:#007D8C;">s = v × t</div>
+          <div style="font-size:0.85rem;color:#555;margin-top:4px;">Жолды табу</div>
+        </div>
+        <div style="background:#f0e2fa;border-radius:10px;padding:14px;">
+          <div style="font-size:1.5rem;font-weight:800;color:#5C1888;">t = s / v</div>
+          <div style="font-size:0.85rem;color:#555;margin-top:4px;">Уақытты табу</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="color:#0D2B55;margin-bottom:12px;">📏 Өлшем бірліктерін аудару калькуляторы</h3>
+    <div style="display:flex;gap:12px;align-items:center;background:#f8f9fa;padding:16px;border-radius:12px;">
+      <input id="convertVal" type="number" value="10" style="padding:10px;border:2px solid #007D8C;border-radius:8px;font-size:1.1rem;width:120px;">
+      <select id="convertFrom" style="padding:10px;border:2px solid #007D8C;border-radius:8px;font-size:1rem;">
+        <option value="ms">м/с</option>
+        <option value="kmh">км/сағ</option>
+      </select>
+      <span style="font-size:1.5rem;">→</span>
+      <div id="convertResult" style="font-size:1.4rem;font-weight:800;color:#1A7A3C;min-width:150px;"></div>
+      <button class="btn btn-check" onclick="convert()">Ауыстыр</button>
+    </div>
+
+    <div style="margin-top:20px;">
+      <h3 style="color:#0D2B55;margin-bottom:12px;">🦁 Хайуанаттар жылдамдығы (өмірлік мысал)</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+        <div style="background:#fff3e0;border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:2rem;">🐆</div>
+          <div style="font-weight:700;color:#D45000;">Гепард</div>
+          <div style="font-size:1.2rem;font-weight:800;">120 км/сағ</div>
+          <div style="font-size:0.85rem;color:#888;">= 33.3 м/с</div>
+        </div>
+        <div style="background:#e3f5e8;border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:2rem;">🐘</div>
+          <div style="font-weight:700;color:#1A7A3C;">Піл</div>
+          <div style="font-size:1.2rem;font-weight:800;">40 км/сағ</div>
+          <div style="font-size:0.85rem;color:#888;">= 11.1 м/с</div>
+        </div>
+        <div style="background:#dcf4f7;border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:2rem;">🐢</div>
+          <div style="font-weight:700;color:#007D8C;">Тасбақа</div>
+          <div style="font-size:1.2rem;font-weight:800;">0.3 км/сағ</div>
+          <div style="font-size:0.85rem;color:#888;">= 0.08 м/с</div>
+        </div>
+        <div style="background:#f0e2fa;border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:2rem;">🦅</div>
+          <div style="font-weight:700;color:#5C1888;">Бүркіт</div>
+          <div style="font-size:1.2rem;font-weight:800;">240 км/сағ</div>
+          <div style="font-size:0.85rem;color:#888;">= 66.7 м/с</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: TASKS -->
+  <div class="panel" id="tab2">
+    <h2 style="color:#0D2B55;margin-bottom:20px;">✏️ Интерактивті тапсырмалар</h2>
+
+    <!-- A level -->
+    <div class="task-card" style="background:#e3f5e8;border-color:#1A7A3C;">
+      <h3 style="color:#1A7A3C;">⭐ А ДЕҢГЕЙІ — Жылдамдықты табу</h3>
+      <p style="margin-bottom:10px;">Автомобиль <strong>s = 120 м</strong> жолды <strong>t = 30 с</strong>-та жүрді. Жылдамдықты табыңыз.</p>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="font-weight:700;">v = 120 / 30 =</span>
+        <input class="task-input" id="taskA" type="number" placeholder="Жауап (м/с)" style="width:150px;">
+        <span style="font-weight:700;">м/с</span>
+        <button class="btn btn-check" onclick="checkTask('taskA',4,'✅ Дұрыс! v = 4 м/с = 14.4 км/сағ 🎉','❌ Бұрыс. v = s/t = 120/30 = 4 м/с')">Тексеру</button>
+      </div>
+      <div id="taskA_res" style="margin-top:8px;font-weight:700;font-size:1rem;"></div>
+    </div>
+
+    <!-- B level -->
+    <div class="task-card" style="background:#dcf4f7;border-color:#007D8C;">
+      <h3 style="color:#007D8C;">⭐⭐ В ДЕҢГЕЙІ — Орташа жылдамдық</h3>
+      <p style="margin-bottom:10px;">Оқушы: <strong>s₁=300м, t₁=60с</strong> және <strong>s₂=200м, t₂=40с</strong> жүрді. vорт = ?</p>
+      <div style="background:#fff;border-radius:8px;padding:12px;margin-bottom:10px;">
+        <p>Sжалпы = 300 + 200 = <input class="task-input" id="taskB1" type="number" placeholder="?" style="width:80px;display:inline;"> м</p>
+        <p>tжалпы = 60 + 40 = <input class="task-input" id="taskB2" type="number" placeholder="?" style="width:80px;display:inline;"> с</p>
+        <p>vорт = Sжалп / tжалп = <input class="task-input" id="taskB3" type="number" placeholder="?" style="width:80px;display:inline;"> м/с</p>
+      </div>
+      <button class="btn btn-check" onclick="checkTaskB()">Тексеру</button>
+      <div id="taskB_res" style="margin-top:8px;font-weight:700;font-size:1rem;"></div>
+    </div>
+
+    <!-- C level -->
+    <div class="task-card" style="background:#f0e2fa;border-color:#5C1888;">
+      <h3 style="color:#5C1888;">⭐⭐⭐ С ДЕҢГЕЙІ — Функционалдық есеп</h3>
+      <p style="margin-bottom:10px;">Асыл үйінен мектепке <strong>600 м</strong> жолды <strong>10 минутта</strong> жүрді.</p>
+      <p style="margin-bottom:8px;font-size:0.9rem;color:#555;">Ескерту: 10 мин = 10 × 60 = 600 с</p>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="font-weight:700;">vорт = 600 / 600 =</span>
+        <input class="task-input" id="taskC" type="number" placeholder="м/с" style="width:100px;">
+        <span style="font-weight:700;">м/с =</span>
+        <input class="task-input" id="taskC2" type="number" placeholder="км/сағ" style="width:100px;">
+        <span style="font-weight:700;">км/сағ</span>
+      </div>
+      <button class="btn btn-check" style="margin-top:10px;" onclick="checkTaskC()">Тексеру</button>
+      <div id="taskC_res" style="margin-top:8px;font-weight:700;font-size:1rem;"></div>
+    </div>
+
+    <!-- True/False -->
+    <div style="background:#fff;border-radius:12px;padding:18px;margin-top:16px;border:2px solid #ddd;">
+      <h3 style="color:#0D2B55;margin-bottom:14px;">✅❌ ДҰРЫС / БҰРЫС</h3>
+      <div id="tfSection"></div>
+      <button class="btn btn-check" style="margin-top:12px;" onclick="checkTF()">Барлығын тексеру</button>
+      <div id="tfResult" style="margin-top:10px;font-weight:700;font-size:1.1rem;"></div>
+    </div>
+
+    <!-- Escape Room -->
+    <div style="background:linear-gradient(135deg,#1A1A2E,#2D2D4E);border-radius:16px;padding:20px;margin-top:16px;color:#fff;">
+      <h3 style="color:#FFD700;margin-bottom:12px;">🔐 ESCAPE ROOM — Кодты тауып аш!</h3>
+      <p style="margin-bottom:16px;opacity:0.85;">Зертхана есігі жабылып қалды! 3 есепті шешіп, кодты енгіз!</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+        <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:14px;">
+          <div style="color:#4CAF50;font-weight:700;margin-bottom:6px;">🔑 КОД 1</div>
+          <div>v=240м/с, t=60с → s=?</div>
+          <input class="task-input" id="er1" type="number" placeholder="s = ?" style="margin-top:8px;background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.3);">
+        </div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:14px;">
+          <div style="color:#2196F3;font-weight:700;margin-bottom:6px;">🔑 КОД 2</div>
+          <div>s=500м, t=100с → v=?</div>
+          <input class="task-input" id="er2" type="number" placeholder="v = ?" style="margin-top:8px;background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.3);">
+        </div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:14px;">
+          <div style="color:#FF9800;font-weight:700;margin-bottom:6px;">🔑 КОД 3</div>
+          <div>s₁=100м/20с, s₂=200м/30с → vорт=?</div>
+          <input class="task-input" id="er3" type="number" placeholder="vорт = ?" style="margin-top:8px;background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.3);">
+        </div>
+      </div>
+      <button class="btn" style="background:#FFD700;color:#1A1A2E;" onclick="checkEscape()">🚪 Есікті аш!</button>
+      <div id="erResult" style="margin-top:12px;font-weight:700;font-size:1.1rem;"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: QUIZ -->
+  <div class="panel" id="tab3">
+    <h2 style="color:#0D2B55;margin-bottom:20px;">🧩 Mini Quiz — 10 сұрақ</h2>
+    <div id="quizSection"></div>
+    <button class="btn btn-check" style="margin-top:16px;" onclick="checkQuiz()">📊 Нәтижені тексеру</button>
+    <div class="score-box" id="scoreBox" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+// ─── SIMULATOR ───────────────────────────────
+let currentVehicle = 'car';
+let compData = [];
+
+function selectVehicle(v, btn) {
+  currentVehicle = v;
+  document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['car','bike','runner'].forEach(id => {
+    document.getElementById(id).style.display = id===v ? 'block' : 'none';
+    document.getElementById(id).style.left = '5%';
+    document.getElementById(id).classList.remove('driving');
+  });
+  document.getElementById('resultBox').className = 'result-box neutral';
+  document.getElementById('resultBox').textContent = '⚡ Жылдамдықты есептеу үшін "Жүгір!" батырмасын басыңыз';
+  document.getElementById('disp_v').textContent = '— м/с';
+}
+
+function updateSim() {
+  const s = document.getElementById('sRange').value;
+  const t = document.getElementById('tRange').value;
+  document.getElementById('sVal').textContent = s;
+  document.getElementById('tVal').textContent = t;
+  document.getElementById('disp_s').textContent = s + ' м';
+  document.getElementById('disp_t').textContent = t + ' с';
+}
+
+function runSim() {
+  const s = parseFloat(document.getElementById('sRange').value);
+  const t = parseFloat(document.getElementById('tRange').value);
+  const v = (s / t).toFixed(2);
+  const vKmh = (v * 3.6).toFixed(1);
+
+  document.getElementById('disp_v').textContent = v + ' м/с';
+  const el = document.getElementById(currentVehicle);
+  el.classList.remove('driving');
+  el.style.left = '5%';
+  void el.offsetWidth;
+  el.style.setProperty('--dur', t + 's');
+  el.classList.add('driving');
+
+  const rb = document.getElementById('resultBox');
+  rb.className = 'result-box correct';
+  rb.innerHTML = `🟢 v = s/t = ${s}/${t} = <strong>${v} м/с</strong> = ${vKmh} км/сағ`;
+
+  drawGraph(s, t, v);
+
+  const icons = {car:'🚗',bike:'🚴',runner:'🏃'};
+  compData = compData.filter(d => d.vehicle !== currentVehicle);
+  compData.push({vehicle:currentVehicle, icon:icons[currentVehicle], s, t, v, vKmh});
+  updateTable();
+}
+
+function resetSim() {
+  ['car','bike','runner'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('driving');
+    el.style.left = '5%';
+  });
+  document.getElementById('resultBox').className = 'result-box neutral';
+  document.getElementById('resultBox').textContent = '⚡ Жылдамдықты есептеу үшін "Жүгір!" батырмасын басыңыз';
+  document.getElementById('disp_v').textContent = '— м/с';
+  compData = [];
+  document.getElementById('compTable').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:#888;">Әр транспортты жүгіріп, кестені толтырыңыз</td></tr>';
+  const canvas = document.getElementById('graph');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+function updateTable() {
+  const tb = document.getElementById('compTable');
+  const colors = {car:'#D45000',bike:'#007D8C',runner:'#1A7A3C'};
+  tb.innerHTML = compData.map(d =>
+    `<tr style="background:#f8f9fa;">
+      <td style="padding:10px;font-weight:700;">${d.icon} ${d.vehicle==='car'?'Автомобиль':d.vehicle==='bike'?'Велосипед':'Жүгіруші'}</td>
+      <td style="padding:10px;text-align:center;">${d.s}</td>
+      <td style="padding:10px;text-align:center;">${d.t}</td>
+      <td style="padding:10px;text-align:center;font-weight:800;color:${colors[d.vehicle]};">${d.v}</td>
+      <td style="padding:10px;text-align:center;font-weight:700;">${d.vKmh}</td>
+    </tr>`
+  ).join('');
+}
+
+function drawGraph(sMax, t, vCur) {
+  const canvas = document.getElementById('graph');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const W=canvas.width, H=canvas.height, pad=40;
+  ctx.fillStyle='#f8f9fa'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#ccc'; ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=pad+(H-2*pad)*i/5;
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+  }
+  ctx.strokeStyle='#333'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad,pad); ctx.lineTo(pad,H-pad); ctx.stroke();
+  ctx.fillStyle='#333'; ctx.font='bold 13px Arial';
+  ctx.fillText('s (м)',W/2,H-8); ctx.fillText('v (м/с)',4,20);
+  ctx.strokeStyle='#1A7A3C'; ctx.lineWidth=3;
+  ctx.beginPath();
+  for(let s=0;s<=sMax;s+=sMax/50){
+    const v=s/t;
+    const x=pad+(W-2*pad)*s/sMax;
+    const y=(H-pad)-(H-2*pad)*v/(sMax/t*1.2);
+    if(s===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  const cx=pad+(W-2*pad);
+  const cy=(H-pad)-(H-2*pad)*(sMax/t)/(sMax/t*1.2);
+  ctx.fillStyle='#D45000'; ctx.beginPath();
+  ctx.arc(cx,cy,6,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#D45000'; ctx.font='bold 12px Arial';
+  ctx.fillText(`v=${vCur}м/с`,cx-30,cy-10);
+}
+
+// ─── CONVERT ─────────────────────────────────
+function convert() {
+  const val = parseFloat(document.getElementById('convertVal').value);
+  const from = document.getElementById('convertFrom').value;
+  const res = document.getElementById('convertResult');
+  if(from==='ms') res.textContent = `${val} м/с = ${(val*3.6).toFixed(2)} км/сағ`;
+  else res.textContent = `${val} км/сағ = ${(val/3.6).toFixed(3)} м/с`;
+}
+convert();
+
+// ─── TASKS ───────────────────────────────────
+function checkTask(id, correct, msgOk, msgFail) {
+  const val = parseFloat(document.getElementById(id).value);
+  const res = document.getElementById(id+'_res');
+  if(Math.abs(val-correct)<0.01){res.style.color='#1A7A3C';res.textContent=msgOk;}
+  else{res.style.color='#B51C1C';res.textContent=msgFail;}
+}
+
+function checkTaskB() {
+  const b1=parseFloat(document.getElementById('taskB1').value);
+  const b2=parseFloat(document.getElementById('taskB2').value);
+  const b3=parseFloat(document.getElementById('taskB3').value);
+  const res=document.getElementById('taskB_res');
+  if(b1===500&&b2===100&&Math.abs(b3-5)<0.01){
+    res.style.color='#1A7A3C';
+    res.textContent='✅ Барлығы дұрыс! Sжалп=500м, tжалп=100с, vорт=5м/с=18км/сағ 🎉';
+  } else {
+    let hints=[];
+    if(b1!==500) hints.push('Sжалп=300+200=500м');
+    if(b2!==100) hints.push('tжалп=60+40=100с');
+    if(Math.abs(b3-5)>0.01) hints.push('vорт=500/100=5м/с');
+    res.style.color='#B51C1C';
+    res.textContent='❌ Қате: '+hints.join(' | ');
+  }
+}
+
+function checkTaskC() {
+  const c=parseFloat(document.getElementById('taskC').value);
+  const c2=parseFloat(document.getElementById('taskC2').value);
+  const res=document.getElementById('taskC_res');
+  if(Math.abs(c-1)<0.01&&Math.abs(c2-3.6)<0.1){
+    res.style.color='#1A7A3C';
+    res.textContent='✅ Дұрыс! vорт=1м/с=3.6км/сағ 🎉';
+  } else {
+    res.style.color='#B51C1C';
+    res.textContent=`❌ Бұрыс. vорт=600/600=1м/с, км/сағ-те: 1×3.6=3.6км/сағ`;
+  }
+}
+
+// TRUE/FALSE
+const tfData=[
+  {q:'v = s×t — жылдамдық формуласы дұрыс.',ans:false},
+  {q:'vорт = Sжалп/tжалп — орташа жылдамдық.',ans:true},
+  {q:'s артса (t тұрақты), v артады.',ans:true},
+  {q:'1 м/с = 3.6 км/сағ.',ans:true},
+  {q:'vорт = (v₁+v₂)/2 формуласы дұрыс.',ans:false},
+];
+const tfSection=document.getElementById('tfSection');
+tfData.forEach((item,i)=>{
+  tfSection.innerHTML+=`<div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <span style="font-weight:600;">${i+1}. ${item.q}</span>
+    <div style="display:flex;gap:8px;">
+      <button onclick="this.dataset.sel='true';this.style.background='#e3f5e8';this.parentNode.children[1].style.background='#f8f9fa';" style="padding:8px 14px;border:2px solid #1A7A3C;border-radius:8px;cursor:pointer;font-weight:700;" id="tf${i}_t">✅ Дұрыс</button>
+      <button onclick="this.dataset.sel='false';this.style.background='#fdeaea';this.parentNode.children[0].style.background='#f8f9fa';" style="padding:8px 14px;border:2px solid #B51C1C;border-radius:8px;cursor:pointer;font-weight:700;" id="tf${i}_f">❌ Бұрыс</button>
+    </div>
+  </div>`;
+});
+
+function checkTF() {
+  let score=0;
+  tfData.forEach((item,i)=>{
+    const tBtn=document.getElementById(`tf${i}_t`);
+    const fBtn=document.getElementById(`tf${i}_f`);
+    const userTrue=tBtn.style.background.includes('e3f5e8');
+    const userFalse=fBtn.style.background.includes('fdeaea');
+    if((item.ans&&userTrue)||(!item.ans&&userFalse)) score++;
+  });
+  const res=document.getElementById('tfResult');
+  const emoji=score===5?'🏆':score>=3?'👍':'📚';
+  res.textContent=`${emoji} Нәтиже: ${score}/5 дұрыс`;
+  res.style.color=score>=4?'#1A7A3C':score>=3?'#D45000':'#B51C1C';
+}
+
+// ESCAPE ROOM
+function checkEscape() {
+  const e1=parseFloat(document.getElementById('er1').value);
+  const e2=parseFloat(document.getElementById('er2').value);
+  const e3=parseFloat(document.getElementById('er3').value);
+  const res=document.getElementById('erResult');
+  if(e1===14400&&e2===5&&Math.abs(e3-6)<0.1){
+    res.style.color='#FFD700';
+    res.innerHTML='🎉 ЕСІК АШЫЛДЫ! КОД: 1-5-6 ✅ Барлық есеп дұрыс! Жарайсың! 🏆';
+  } else {
+    let h=[];
+    if(e1!==14400) h.push('КОД1: s=v×t=240×60=14400м');
+    if(e2!==5) h.push('КОД2: v=s/t=500/100=5м/с');
+    if(Math.abs(e3-6)>0.1) h.push('КОД3: vорт=(100+200)/(20+30)=300/50=6м/с');
+    res.style.color='#FF6B6B';
+    res.textContent='❌ Бұрыс! '+h.join(' | ');
+  }
+}
+
+// ─── QUIZ ─────────────────────────────────────
+const quizData=[
+  {q:'s=120м, t=30с → v=?',opts:['3м/с','4м/с','5м/с','6м/с'],ans:1},
+  {q:'v=5м/с, t=60с → s=?',opts:['150м','200м','300м','360м'],ans:2},
+  {q:'Орташа жылдамдық формуласы:',opts:['v=s/t','vорт=Sжалп/tжалп','vорт=v₁+v₂','v=t/s'],ans:1},
+  {q:'1 м/с неше км/сағ?',opts:['1.6','2.8','3.6','4.0'],ans:2},
+  {q:'s₁=200м/40с, s₂=300м/60с → vорт=?',opts:['4м/с','5м/с','6м/с','7м/с'],ans:1},
+  {q:'72 км/сағ = ? м/с',opts:['18','20','22','24'],ans:1},
+  {q:'s=500м, v=10м/с → t=?',opts:['40с','50с','55с','60с'],ans:1},
+  {q:'Жылдамдықтың SI бірлігі:',opts:['км/сағ','м/мин','м/с','см/с'],ans:2},
+  {q:'v артқанда (s тұрақты) t:',opts:['артады','кемиді','өзгермейді','еселенеді'],ans:1},
+  {q:'v=2м/с, t=45с → s=?',opts:['80м','90м','95м','100м'],ans:1},
+];
+const qs=document.getElementById('quizSection');
+quizData.forEach((item,i)=>{
+  qs.innerHTML+=`<div class="quiz-q"><p>${i+1}. ${item.q}</p>
+    <div class="quiz-opts">${item.opts.map((o,j)=>
+      `<button class="opt" data-q="${i}" data-a="${j}" onclick="selectOpt(this)">${o}</button>`
+    ).join('')}</div></div>`;
+});
+
+function selectOpt(btn) {
+  const q=btn.dataset.q;
+  document.querySelectorAll(`.opt[data-q="${q}"]`).forEach(b=>{b.classList.remove('correct','wrong');b.style.background='#fff';b.style.borderColor='#ddd';});
+  btn.style.background='#dcf4f7';btn.style.borderColor='#007D8C';
+  btn.dataset.selected='true';
+  document.querySelectorAll(`.opt[data-q="${q}"]`).forEach(b=>{if(b!==btn) b.dataset.selected='false';});
+}
+
+function checkQuiz() {
+  let score=0;
+  quizData.forEach((item,i)=>{
+    const opts=document.querySelectorAll(`.opt[data-q="${i}"]`);
+    opts.forEach((btn,j)=>{
+      if(btn.style.background.includes('dcf4f7')||btn.dataset.selected==='true'){
+        if(j===item.ans){btn.classList.add('correct');score++;}
+        else btn.classList.add('wrong');
+      }
+      if(j===item.ans) btn.classList.add('correct');
+    });
+  });
+  const sb=document.getElementById('scoreBox');
+  sb.style.display='block';
+  const pct=Math.round(score/quizData.length*100);
+  const stars=score>=9?'⭐⭐⭐':score>=7?'⭐⭐':score>=5?'⭐':'';
+  const title=score>=9?'Жылдамдық шебері!':score>=7?'Зерттеуші!':score>=5?'Үйренуші!':'Қайталап көр!';
+  sb.innerHTML=`<h2>${stars} ${score}/${quizData.length} — ${pct}%</h2><p style="font-size:1.2rem;margin-top:8px;">${title}</p>
+    <div style="background:rgba(255,255,255,0.2);border-radius:8px;height:12px;margin-top:12px;">
+      <div style="background:#FFD700;height:100%;border-radius:8px;width:${pct}%;transition:width 1s;"></div>
+    </div>`;
+}
+
+function showTab(n) {
+  document.querySelectorAll('.panel').forEach((p,i)=>{p.classList.toggle('active',i===n);});
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',i===n);});
+}
+
+updateSim();
+</script>
+</body>
+</html>
